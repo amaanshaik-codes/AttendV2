@@ -1,6 +1,6 @@
-import { db, sql } from '@vercel/postgres';
-import { NextApiRequest, NextApiResponse } from 'next';
-import { DEFAULT_PASSWORD } from '../constants';
+import { sql } from '@vercel/postgres';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+import { DEFAULT_PASSWORD } from './constants.js';
 
 const initialStudents = [
     { id: 'S01', name: 'Amaan Shaik' },
@@ -55,38 +55,38 @@ async function seedData() {
 }
 
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
-        const client = await db.connect();
-
-        // One-time setup endpoint
         if (req.method === 'GET' && req.query.action === 'setup') {
             await createTables();
             await seedData();
-            client.release();
             return res.status(200).json({ message: 'Database setup complete!' });
         }
 
         if (req.method === 'GET') {
-            const { rows: students } = await client.sql`SELECT * FROM students ORDER BY id;`;
-            const { rows: attendanceRecords } = await client.sql`SELECT * FROM attendance_records;`;
+            const studentsPromise = sql`SELECT * FROM students ORDER BY id;`;
+            const attendancePromise = sql`SELECT * FROM attendance_records;`;
+            const settingsPromise = sql`SELECT value FROM settings WHERE key = 'main';`;
+
+            const [studentsResult, attendanceResult, settingsResult] = await Promise.all([studentsPromise, attendancePromise, settingsPromise]);
+
+            const { rows: students } = studentsResult;
+            const { rows: attendanceRecords } = attendanceResult;
             
-            let settings = { theme: 'light', password: DEFAULT_PASSWORD };
-            const settingsResult = await client.sql`SELECT value FROM settings WHERE key = 'main';`;
+            let settings = { theme: 'light' }; // Default safe settings
             if(settingsResult.rows.length > 0) {
                 // Return only non-sensitive settings
                 const { password, ...safeSettings } = settingsResult.rows[0].value as any;
                 settings = safeSettings;
             }
 
-            client.release();
             return res.status(200).json({ students, attendanceRecords, settings });
         }
 
-        client.release();
         return res.status(405).json({ error: 'Method Not Allowed' });
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Internal Server Error' });
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return res.status(500).json({ error: 'Internal Server Error', details: errorMessage });
     }
 }
