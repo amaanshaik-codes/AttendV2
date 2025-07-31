@@ -1,24 +1,20 @@
-import { db } from '@vercel/postgres';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { sql } from '@vercel/postgres';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
         return res.status(405).json({ message: 'Method Not Allowed' });
     }
 
-    const client = await db.connect();
     try {
         const { date, presentStudentIds } = req.body;
         if (!date || !Array.isArray(presentStudentIds)) {
             return res.status(400).json({ error: 'Date and presentStudentIds array are required' });
         }
 
-        // The `@vercel/postgres` sql tag requires array to be formatted as a string literal for TEXT[] columns.
-        const presentStudentIdsPgArray = `{${presentStudentIds.join(',')}}`;
-
-        const result = await client.sql`
+        const result = await sql`
             INSERT INTO attendance_records (date, present_student_ids)
-            VALUES (${date}, ${presentStudentIdsPgArray})
+            VALUES (${date}, ${presentStudentIds as any})
             ON CONFLICT (date) DO UPDATE
             SET present_student_ids = EXCLUDED.present_student_ids
             RETURNING *;
@@ -27,8 +23,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         return res.status(200).json(result.rows[0]);
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Internal Server Error' });
-    } finally {
-        client.release();
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return res.status(500).json({ error: 'Internal Server Error', details: errorMessage });
     }
 }
