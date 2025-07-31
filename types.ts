@@ -1,3 +1,5 @@
+import React from 'react';
+
 export interface Student {
   id: string; // e.g., 'S01'
   name: string;
@@ -23,7 +25,7 @@ export interface Stat {
   change?: string;
   changeType?: 'increase' | 'decrease';
   description?: string;
-  icon: React.ReactElement<React.SVGProps<SVGSVGElement>>;
+  icon: React.ComponentType<React.SVGProps<SVGSVGElement>>;
 }
 
 export interface StudentStat {
