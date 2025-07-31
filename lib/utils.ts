@@ -1,4 +1,5 @@
 
+
 import { Student, AttendanceRecord, Stat, StudentStat, AppSettings } from '../types';
 import { 
     IconTrendingUp, IconTrendingDown, IconUsers, IconCalendarCheck, 
@@ -293,6 +294,18 @@ const convertToCSV = (data: object[]) => {
     return [header, ...rows].join('\n');
 };
 
+const downloadCSV = (csvData: string, filename: string) => {
+    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', filename);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+};
+
 export const exportStudentsToCSV = (students: Student[]) => {
     const csvData = convertToCSV(students);
     downloadCSV(csvData, 'students.csv');
@@ -308,18 +321,6 @@ export const exportAttendanceToCSV = (records: AttendanceRecord[], students: Stu
     }));
     const csvData = convertToCSV(data);
     downloadCSV(csvData, 'attendance_history.csv');
-};
-
-const downloadCSV = (csvData: string, filename: string) => {
-    const blob = new Blob([csvData], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    const url = URL.createObjectURL(blob);
-    link.setAttribute('href', url);
-    link.setAttribute('download', filename);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
 };
 
 
