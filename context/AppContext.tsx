@@ -1,3 +1,4 @@
+
 import React, { createContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { Student, AttendanceRecord, AppSettings } from '../types';
 
@@ -16,7 +17,23 @@ interface AppContextType {
   updateSettings: (newSettings: Partial<AppSettings>) => Promise<void>;
 }
 
-export const AppContext = createContext<AppContextType | null>(null);
+// Create a safe, non-null default context value
+const defaultAppContext: AppContextType = {
+  students: [],
+  attendanceRecords: [],
+  settings: { theme: 'light' },
+  isAuthenticated: false,
+  isLoading: true,
+  login: async () => false,
+  logout: () => {},
+  addStudent: async () => {},
+  updateStudent: async () => {},
+  deleteStudent: async () => {},
+  submitAttendance: async () => {},
+  updateSettings: async () => {},
+};
+
+export const AppContext = createContext<AppContextType>(defaultAppContext);
 
 export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
   const [students, setStudents] = useState<Student[]>([]);
@@ -31,15 +48,17 @@ export const AppProvider: React.FC<{ children: ReactNode }> = ({ children }) => 
     try {
       const response = await fetch('/api/bootstrap');
       if (!response.ok) throw new Error('Failed to fetch initial data');
-      const { students, attendanceRecords, settings } = await response.json();
-      setStudents(students);
-      setAttendanceRecords(attendanceRecords);
-      // Persist theme preference in localStorage for instant theme loading on revisit
+      const data = await response.json();
+      setStudents(data.students || []);
+      setAttendanceRecords(data.attendanceRecords || []);
+      
       const localTheme = localStorage.getItem('attend-theme') as 'light' | 'dark' | null;
-      setSettings({ ...settings, theme: localTheme || settings.theme || 'light' });
+      const serverSettings = data.settings || {};
+      setSettings({ ...serverSettings, theme: localTheme || serverSettings.theme || 'light' });
+      
     } catch (error) {
       console.error("Could not initialize app:", error);
-      // Handle error state if needed
+      // Even on error, we stop loading and the app can show a login or error state.
     } finally {
       setIsLoading(false);
     }
