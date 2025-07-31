@@ -17,30 +17,33 @@ const Card: React.FC<{ children: React.ReactNode; className?: string }> = ({ chi
   </div>
 );
 
-const StatCard: React.FC<{ stat: Stat }> = ({ stat }) => (
-  <Card className="p-5">
-    <div className="flex items-start justify-between">
-      <div>
-        <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.name}</h3>
-        <p className="mt-1 text-2xl font-bold tracking-tight">{stat.value}</p>
-        {stat.change && (
-          <div className={`mt-1 flex items-center gap-1 text-xs ${stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
-            {stat.changeType === 'increase' ? <IconTrendingUp className="w-4 h-4" /> : <IconTrendingDown className="w-4 h-4" />}
-            <span>{stat.change} vs last week</span>
-          </div>
-        )}
+const StatCard: React.FC<{ stat: Stat }> = ({ stat }) => {
+  const Icon = stat.icon;
+  return (
+    <Card className="p-5">
+      <div className="flex items-start justify-between">
+        <div>
+          <h3 className="text-sm font-medium text-slate-500 dark:text-slate-400">{stat.name}</h3>
+          <p className="mt-1 text-2xl font-bold tracking-tight">{stat.value}</p>
+          {stat.change && (
+            <div className={`mt-1 flex items-center gap-1 text-xs ${stat.changeType === 'increase' ? 'text-green-600' : 'text-red-600'}`}>
+              {stat.changeType === 'increase' ? <IconTrendingUp className="w-4 h-4" /> : <IconTrendingDown className="w-4 h-4" />}
+              <span>{stat.change} vs last week</span>
+            </div>
+          )}
+        </div>
+        <div className="p-2 bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 rounded-lg">
+          <Icon className="w-6 h-6" />
+        </div>
       </div>
-      <div className="p-2 bg-primary-100 dark:bg-primary-500/20 text-primary-600 dark:text-primary-300 rounded-lg">
-        {React.cloneElement(stat.icon, { className: 'w-6 h-6' })}
-      </div>
-    </div>
-  </Card>
-);
+    </Card>
+  );
+};
 
-const StudentListCard: React.FC<{ title: string, stats: StudentStat[], icon: React.ReactElement<React.SVGProps<SVGSVGElement>> }> = ({ title, stats, icon }) => (
+const StudentListCard: React.FC<{ title: string, stats: StudentStat[], icon: React.ComponentType<React.SVGProps<SVGSVGElement>> }> = ({ title, stats, icon: Icon }) => (
     <Card className="p-5">
         <div className="flex items-center gap-3 mb-4">
-            {React.cloneElement(icon, { className: 'w-5 h-5 text-slate-400' })}
+            <Icon className="w-5 h-5 text-slate-400" />
             <h3 className="font-semibold text-slate-700 dark:text-slate-200">{title}</h3>
         </div>
         <div className="space-y-3">
@@ -155,6 +158,8 @@ const Dashboard: React.FC<{showToast: (message: string, type?: 'success' | 'erro
         }
     };
 
+    const DropoutIcon = advancedStats.mostCommonDropoutDay.icon;
+    const StudentOfTheWeekIcon = advancedStats.studentOfTheWeek.icon;
 
     return (
         <div>
@@ -176,7 +181,7 @@ const Dashboard: React.FC<{showToast: (message: string, type?: 'success' | 'erro
                 <div className="lg:col-span-2">
                     <BarChart data={dailyTrend} totalStudents={students.length}/>
                 </div>
-                <StudentListCard title="Top 5 Regular Students" stats={topStudents} icon={<IconTrendingUp />} />
+                <StudentListCard title="Top 5 Regular Students" stats={topStudents} icon={IconTrendingUp} />
             </div>
 
             <h2 className="text-2xl font-bold tracking-tight mt-8 mb-4">Advanced Stats</h2>
@@ -184,7 +189,7 @@ const Dashboard: React.FC<{showToast: (message: string, type?: 'success' | 'erro
                 <StudentListCard title={advancedStats.longestInactiveStreaks.title} stats={advancedStats.longestInactiveStreaks.data} icon={advancedStats.longestInactiveStreaks.icon} />
                  <Card className="p-5">
                     <div className="flex items-center gap-3 mb-4">
-                        {React.cloneElement(advancedStats.mostCommonDropoutDay.icon, { className: 'w-5 h-5 text-slate-400' })}
+                        <DropoutIcon className="w-5 h-5 text-slate-400" />
                         <h3 className="font-semibold text-slate-700 dark:text-slate-200">{advancedStats.mostCommonDropoutDay.title}</h3>
                     </div>
                     <p className="text-2xl font-bold tracking-tight">{advancedStats.mostCommonDropoutDay.value}</p>
@@ -192,7 +197,7 @@ const Dashboard: React.FC<{showToast: (message: string, type?: 'success' | 'erro
                 {advancedStats.studentOfTheWeek.data ? (
                     <Card className="p-5">
                         <div className="flex items-center gap-3 mb-4">
-                            {React.cloneElement(advancedStats.studentOfTheWeek.icon, { className: 'w-5 h-5 text-slate-400' })}
+                            <StudentOfTheWeekIcon className="w-5 h-5 text-slate-400" />
                             <h3 className="font-semibold text-slate-700 dark:text-slate-200">{advancedStats.studentOfTheWeek.title}</h3>
                         </div>
                         <p className="text-2xl font-bold tracking-tight">{advancedStats.studentOfTheWeek.data.student.name}</p>
@@ -200,7 +205,7 @@ const Dashboard: React.FC<{showToast: (message: string, type?: 'success' | 'erro
                 ) : (
                    <Card className="p-5">
                         <div className="flex items-center gap-3 mb-4">
-                           {React.cloneElement(advancedStats.studentOfTheWeek.icon, { className: 'w-5 h-5 text-slate-400' })}
+                           <StudentOfTheWeekIcon className="w-5 h-5 text-slate-400" />
                            <h3 className="font-semibold text-slate-700 dark:text-slate-200">{advancedStats.studentOfTheWeek.title}</h3>
                         </div>
                         <p className="text-sm text-slate-400">Not enough data.</p>
