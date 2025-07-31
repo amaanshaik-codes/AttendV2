@@ -1,0 +1,13 @@
+{
+  "name": "attend-app-backend",
+  "version": "1.0.0",
+  "private": true,
+  "dependencies": {
+    "@vercel/postgres": "^0.9.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@types/react": "^18.2.61",
+    "typescript": "^5.3.3"
+  }
+}
