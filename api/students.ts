@@ -1,21 +1,19 @@
-import { db } from '@vercel/postgres';
-import { NextApiRequest, NextApiResponse } from 'next';
+import { sql } from '@vercel/postgres';
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-    const client = await db.connect();
-
+export default async function handler(req: VercelRequest, res: VercelResponse) {
     try {
         if (req.method === 'POST') {
             const { name } = req.body;
             if (!name) return res.status(400).json({ error: 'Name is required' });
 
             // Generate new ID
-            const lastIdResult = await client.sql`SELECT id FROM students ORDER BY id DESC LIMIT 1;`;
+            const lastIdResult = await sql`SELECT id FROM students ORDER BY id DESC LIMIT 1;`;
             const lastId = lastIdResult.rows[0]?.id || 'S00';
             const newIdNumber = parseInt(lastId.substring(1), 10) + 1;
             const newId = `S${String(newIdNumber).padStart(2, '0')}`;
             
-            const result = await client.sql`
+            const result = await sql`
                 INSERT INTO students (id, name, created_at) 
                 VALUES (${newId}, ${name}, NOW()) 
                 RETURNING *;`;
@@ -27,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
              const { id, newName } = req.body;
              if (!id || !newName) return res.status(400).json({ error: 'ID and new name are required' });
 
-             await client.sql`UPDATE students SET name = ${newName} WHERE id = ${id};`;
+             await sql`UPDATE students SET name = ${newName} WHERE id = ${id};`;
              return res.status(200).json({ success: true });
         }
 
@@ -35,9 +33,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
             const { id } = req.body;
             if (!id) return res.status(400).json({ error: 'ID is required' });
 
-            await client.sql`DELETE FROM students WHERE id = ${id};`;
+            await sql`DELETE FROM students WHERE id = ${id};`;
             // Also remove from attendance records
-            await client.sql`
+            await sql`
                 UPDATE attendance_records
                 SET present_student_ids = array_remove(present_student_ids, ${id});
             `;
@@ -48,8 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     } catch (error) {
         console.error(error);
-        return res.status(500).json({ error: 'Internal Server Error' });
-    } finally {
-        client.release();
+        const errorMessage = error instanceof Error ? error.message : 'An unknown error occurred';
+        return res.status(500).json({ error: 'Internal Server Error', details: errorMessage });
     }
 }
