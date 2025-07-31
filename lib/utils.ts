@@ -88,12 +88,12 @@ export const getDashboardStats = (records: AttendanceRecord[], students: Student
     const longestStreak = students.length > 0 ? Math.max(...students.map(s => getStudentStats(s.id, records).longestStreak)) : 0;
     
     return [
-        { name: "Today's Attendance", value: todaysRecord ? `${todaysRecord.presentStudentIds.length} / ${students.length}` : 'Not Taken', icon: React.createElement(IconUsers) as React.ReactElement },
-        { name: "Overall Attendance %", value: `${overallAttendance}%`, icon: React.createElement(IconCalendarCheck) as React.ReactElement },
-        { name: "Class Engagement (7d)", value: `${classEngagementIndex}%`, change: `${weeklyChange.toFixed(0)}%`, changeType: weeklyChange >= 0 ? 'increase' : 'decrease', icon: React.createElement(IconZap) as React.ReactElement },
-        { name: "Most Active Day", value: mostActiveDay, icon: React.createElement(IconActivity) as React.ReactElement },
-        { name: "Longest Class Streak", value: `${longestStreak} days`, icon: React.createElement(IconAward) as React.ReactElement },
-        { name: "Last Login", value: settings.lastLogin ? formatRelativeTime(settings.lastLogin) : 'N/A', icon: React.createElement(IconClock) as React.ReactElement },
+        { name: "Today's Attendance", value: todaysRecord ? `${todaysRecord.presentStudentIds.length} / ${students.length}` : 'Not Taken', icon: <IconUsers /> },
+        { name: "Overall Attendance %", value: `${overallAttendance}%`, icon: <IconCalendarCheck /> },
+        { name: "Class Engagement (7d)", value: `${classEngagementIndex}%`, change: `${weeklyChange.toFixed(0)}%`, changeType: weeklyChange >= 0 ? 'increase' : 'decrease', icon: <IconZap /> },
+        { name: "Most Active Day", value: mostActiveDay, icon: <IconActivity /> },
+        { name: "Longest Class Streak", value: `${longestStreak} days`, icon: <IconAward /> },
+        { name: "Last Login", value: settings.lastLogin ? formatRelativeTime(settings.lastLogin) : 'N/A', icon: <IconClock /> },
     ];
 };
 
@@ -149,15 +149,13 @@ export const getStudentStats = (studentId: string, records: AttendanceRecord[]) 
 }
 
 export const getAdvancedStats = (records: AttendanceRecord[], students: Student[]) => {
-    const iconAlertTriangle = React.createElement(IconAlertTriangle);
-    const iconBarChart = React.createElement(IconBarChart);
-    const iconStar = React.createElement(IconStar);
-
-    if (students.length === 0 || records.length < 2) return {
-        longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: iconAlertTriangle, data: [] as StudentStat[] },
-        mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: iconBarChart, value: 'N/A' },
-        studentOfTheWeek: { title: "Student of the Week", icon: iconStar, data: null }
-    };
+    if (students.length === 0 || records.length < 2) {
+        return {
+            longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: <IconAlertTriangle />, data: [] as StudentStat[] },
+            mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: <IconBarChart />, value: 'N/A' },
+            studentOfTheWeek: { title: "Student of the Week", icon: <IconStar />, data: null }
+        };
+    }
 
     // Longest Inactive Streak
     const inactiveStreaks: StudentStat[] = students.map(student => {
@@ -199,17 +197,17 @@ export const getAdvancedStats = (records: AttendanceRecord[], students: Student[
         const studentOfTheWeek = studentScores.sort((a,b) => b.score - a.score)[0] || null;
 
         return {
-            longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: iconAlertTriangle, data: inactiveStreaks },
-            mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: iconBarChart, value: mostCommonDropoutDay },
-            studentOfTheWeek: { title: "Student of the Week", icon: iconStar, data: studentOfTheWeek ? {student: studentOfTheWeek.student, value: ''} : null }
+            longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: <IconAlertTriangle />, data: inactiveStreaks },
+            mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: <IconBarChart />, value: mostCommonDropoutDay },
+            studentOfTheWeek: { title: "Student of the Week", icon: <IconStar />, data: studentOfTheWeek ? {student: studentOfTheWeek.student, value: ''} : null }
         };
     }
 
     // Default return if no records in the last week
     return {
-        longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: iconAlertTriangle, data: inactiveStreaks },
-        mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: iconBarChart, value: mostCommonDropoutDay },
-        studentOfTheWeek: { title: "Student of the Week", icon: iconStar, data: null }
+        longestInactiveStreaks: { title: "Longest Inactive Streaks", icon: <IconAlertTriangle />, data: inactiveStreaks },
+        mostCommonDropoutDay: { title: "Most Common Dropout Day", icon: <IconBarChart />, value: mostCommonDropoutDay },
+        studentOfTheWeek: { title: "Student of the Week", icon: <IconStar />, data: null }
     };
 };
 
@@ -249,7 +247,13 @@ export const generateCalendarDays = (studentId: string, records: AttendanceRecor
         const record = recordsMap.get(dateString);
         
         let status: 'present' | 'absent' | 'no-record' | 'future' | 'empty' = 'future';
-        if (currentDate.getUTCMonth() < today.getUTCMonth() - monthsAgo) {
+        
+        // This logic seems a bit off, let's correct it to handle month boundaries better.
+        const startMonth = new Date(today);
+        startMonth.setUTCMonth(today.getUTCMonth() - monthsAgo);
+        startMonth.setUTCDate(1);
+
+        if (currentDate < startMonth && currentDate.getUTCMonth() !== startMonth.getUTCMonth()) {
             status = 'empty';
         } else if (currentDate > today) {
             status = 'future';
